@@ -3,82 +3,39 @@ pipeline {
 
     environment {
         AWS_DEFAULT_REGION = 'us-west-2'
-        ECR_REGISTRY       = '<your-account-id>.dkr.ecr.us-west-2.amazonaws.com'
-        WEB_IMAGE          = "${ECR_REGISTRY}/web"
-        APP_IMAGE          = "${ECR_REGISTRY}/app"
-        EKS_CLUSTER        = '3tier-eks'
-        IMAGE_TAG          = "${BUILD_NUMBER}"
+        INSTANCE_TYPE      = 't2.micro'
+        AMI_ID             = 'ami-0c55b159cbfafe1f0'  // Amazon Linux 2 us-west-2
+        KEY_NAME           = '<your-key-pair-name>'
+        SECURITY_GROUP     = '<your-security-group-id>'
+        SUBNET_ID          = '<your-subnet-id>'
     }
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Build Images') {
+        stage('Deploy EC2') {
             steps {
                 withAWS(credentials: 'amazon_aws', region: "${AWS_DEFAULT_REGION}") {
                     sh '''
-                        docker build -t ${WEB_IMAGE}:${IMAGE_TAG} src/web/
-                        docker build -t ${APP_IMAGE}:${IMAGE_TAG} src/app/
-                    '''
-                }
-            }
-        }
+                        INSTANCE_ID=$(aws ec2 run-instances \
+                            --image-id ${AMI_ID} \
+                            --instance-type ${INSTANCE_TYPE} \
+                            --key-name ${KEY_NAME} \
+                            --security-group-ids ${SECURITY_GROUP} \
+                            --subnet-id ${SUBNET_ID} \
+                            --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=jenkins-ec2}]' \
+                            --query 'Instances[0].InstanceId' \
+                            --output text)
 
-        stage('Push to ECR') {
-            steps {
-                withAWS(credentials: 'amazon_aws', region: "${AWS_DEFAULT_REGION}") {
-                    sh '''
-                        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | \
-                        docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                        echo "EC2 Instance ID: $INSTANCE_ID"
 
-                        docker push ${WEB_IMAGE}:${IMAGE_TAG}
-                        docker push ${APP_IMAGE}:${IMAGE_TAG}
+                        aws ec2 wait instance-running --instance-ids $INSTANCE_ID
 
-                        docker tag ${WEB_IMAGE}:${IMAGE_TAG} ${WEB_IMAGE}:latest
-                        docker tag ${APP_IMAGE}:${IMAGE_TAG} ${APP_IMAGE}:latest
+                        PUBLIC_IP=$(aws ec2 describe-instances \
+                            --instance-ids $INSTANCE_ID \
+                            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+                            --output text)
 
-                        docker push ${WEB_IMAGE}:latest
-                        docker push ${APP_IMAGE}:latest
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to EKS') {
-            steps {
-                withAWS(credentials: 'amazon_aws', region: "${AWS_DEFAULT_REGION}") {
-                    sh '''
-                        aws eks update-kubeconfig --region ${AWS_DEFAULT_REGION} --name ${EKS_CLUSTER}
-
-                        kubectl create namespace web --dry-run=client -o yaml | kubectl apply -f -
-                        kubectl create namespace app --dry-run=client -o yaml | kubectl apply -f -
-
-                        kubectl apply -f k8s/network-policy/network-policies.yaml
-
-                        kubectl set image deployment/web-deployment web=${WEB_IMAGE}:${IMAGE_TAG} -n web
-                        kubectl set image deployment/app-deployment app=${APP_IMAGE}:${IMAGE_TAG} -n app
-
-                        kubectl apply -f k8s/ingress/ingress.yaml
-
-                        kubectl rollout status deployment/web-deployment -n web --timeout=120s
-                        kubectl rollout status deployment/app-deployment -n app --timeout=120s
-                    '''
-                }
-            }
-        }
-
-        stage('Verify') {
-            steps {
-                withAWS(credentials: 'amazon_aws', region: "${AWS_DEFAULT_REGION}") {
-                    sh '''
-                        kubectl get pods -n web
-                        kubectl get pods -n app
-                        kubectl get ingress -n web
+                        echo "EC2 is running at: $PUBLIC_IP"
                     '''
                 }
             }
@@ -87,15 +44,10 @@ pipeline {
 
     post {
         success {
-            echo "Deployment successful! Build #${BUILD_NUMBER}"
+            echo "EC2 deployed successfully!"
         }
         failure {
-            withAWS(credentials: 'amazon_aws', region: "${AWS_DEFAULT_REGION}") {
-                sh '''
-                    kubectl rollout undo deployment/web-deployment -n web
-                    kubectl rollout undo deployment/app-deployment -n app
-                '''
-            }
+            echo "EC2 deployment failed!"
         }
     }
 }
