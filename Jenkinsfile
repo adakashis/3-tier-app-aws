@@ -7,7 +7,7 @@ pipeline {
     stages {
         stage('Deploy') {
             steps {
-                withAWS(credentials: 'aws-jenkins-creds', region: "${AWS_DEFAULT_REGION}") {
+                withAWS(credentials: 'amazon_aws', region: "${AWS_DEFAULT_REGION}") {
                     sh '''
                     aws s3 ls
                     # or terraform apply, ecs deploy, etc.
