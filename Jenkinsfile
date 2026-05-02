@@ -4,10 +4,10 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = 'us-west-2'
         INSTANCE_TYPE      = 't2.micro'
-        AMI_ID             = 'ami-06c6960215cdac78d'  // Amazon Linux 2023 us-west-2
-        KEY_NAME           = '<your-key-pair-name>'
-        SECURITY_GROUP     = '<your-security-group-id>'
-        SUBNET_ID          = '<your-subnet-id>'
+        AMI_ID             = 'ami-09d7e465726bef039'
+        KEY_NAME           = 'myjenkinsconnect'
+        SECURITY_GROUP     = 'sg-06daac0b60d005988'
+        SUBNET_ID          = 'subnet-00e11eec59234e7b6'
         PATH               = "/usr/local/bin:${env.PATH}"
     }
 
