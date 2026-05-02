@@ -4,7 +4,7 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = 'us-west-2'
         INSTANCE_TYPE      = 't2.micro'
-        AMI_ID             = 'ami-0c55b159cbfafe1f0'  // Amazon Linux 2 us-west-2
+        AMI_ID             = 'ami-0c55b159cbfafe1f0'
         KEY_NAME           = '<your-key-pair-name>'
         SECURITY_GROUP     = '<your-security-group-id>'
         SUBNET_ID          = '<your-subnet-id>'
@@ -14,7 +14,11 @@ pipeline {
 
         stage('Deploy EC2') {
             steps {
-                withAWS(credentials: 'amazon_aws', region: "${AWS_DEFAULT_REGION}") {
+                withCredentials([usernamePassword(
+                    credentialsId: 'amazon_aws',
+                    usernameVariable: 'AWS_ACCESS_KEY_ID',
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
                     sh '''
                         INSTANCE_ID=$(aws ec2 run-instances \
                             --image-id ${AMI_ID} \
@@ -26,7 +30,7 @@ pipeline {
                             --query 'Instances[0].InstanceId' \
                             --output text)
 
-                        echo "EC2 Instance ID: $INSTANCE_ID"
+                        echo "Instance ID: $INSTANCE_ID"
 
                         aws ec2 wait instance-running --instance-ids $INSTANCE_ID
 
@@ -35,7 +39,7 @@ pipeline {
                             --query 'Reservations[0].Instances[0].PublicIpAddress' \
                             --output text)
 
-                        echo "EC2 is running at: $PUBLIC_IP"
+                        echo "EC2 running at: $PUBLIC_IP"
                     '''
                 }
             }
