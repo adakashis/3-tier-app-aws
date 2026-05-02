@@ -14,10 +14,10 @@ pipeline {
 
         stage('Deploy EC2') {
             steps {
-                withCredentials([usernamePassword(
+                withCredentials([aws(
                     credentialsId: 'amazon_aws',
-                    usernameVariable: 'AWS_ACCESS_KEY_ID',
-                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                 )]) {
                     sh '''
                         INSTANCE_ID=$(aws ec2 run-instances \
