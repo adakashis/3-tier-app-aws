@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         AWS_DEFAULT_REGION = 'us-east-1'
-        AWS_CREDS = credentials('aws-jenkins-creds')
+        AWS_CREDS = credentials('amazon_aws')
     }
     stages {
         stage('Deploy') {
