@@ -4,7 +4,7 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = 'us-west-2'
         INSTANCE_TYPE      = 't2.micro'
-        AMI_ID             = 'ami-0150847fe1b89b004'  // Amazon Linux 2023 us-west-2
+        AMI_ID             = 'ami-06c6960215cdac78d'  // Amazon Linux 2023 us-west-2
         KEY_NAME           = '<your-key-pair-name>'
         SECURITY_GROUP     = '<your-security-group-id>'
         SUBNET_ID          = '<your-subnet-id>'
