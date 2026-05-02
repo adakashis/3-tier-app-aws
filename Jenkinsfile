@@ -4,10 +4,11 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = 'us-west-2'
         INSTANCE_TYPE      = 't2.micro'
-        AMI_ID             = 'ami-0c55b159cbfafe1f0'
+        AMI_ID             = 'ami-05572e392e8e9f4c9'  // Amazon Linux 2023 us-west-2
         KEY_NAME           = '<your-key-pair-name>'
         SECURITY_GROUP     = '<your-security-group-id>'
         SUBNET_ID          = '<your-subnet-id>'
+        PATH               = "/usr/local/bin:${env.PATH}"
     }
 
     stages {
