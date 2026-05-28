@@ -9,7 +9,6 @@ pipeline {
     }
 
     stages {
-
         stage('Terraform Apply') {
             steps {
                 sh '''
@@ -23,12 +22,10 @@ pipeline {
         stage('Deploy EC2') {
             steps {
                 script {
-                    // Fetch Terraform outputs
                     def subnet_id = sh(script: "cd infra && terraform output -raw subnet_id", returnStdout: true).trim()
                     def sg_id     = sh(script: "cd infra && terraform output -raw security_group_id", returnStdout: true).trim()
                     def ami_id    = sh(script: "cd infra && terraform output -raw ami_id", returnStdout: true).trim()
 
-                    // Run AWS CLI commands
                     sh '''
                     INSTANCE_ID=$(aws ec2 run-instances \
                         --image-id ''' + ami_id + ''' \
