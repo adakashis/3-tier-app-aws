@@ -4,10 +4,7 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = 'us-west-2'
         INSTANCE_TYPE      = 't2.micro'
-        AMI_ID             = 'ami-09d7e465726bef039'
         KEY_NAME           = 'myjenkinsconnect'
-        SECURITY_GROUP     = 'sg-06daac0b60d005988'
-        SUBNET_ID          = 'subnet-00e11eec59234e7b6'
         PATH               = "/usr/local/bin:${env.PATH}"
     }
 
@@ -26,10 +23,12 @@ pipeline {
         stage('Deploy EC2') {
             steps {
                 script {
+                    // Fetch Terraform outputs
                     def subnet_id = sh(script: "cd infra && terraform output -raw subnet_id", returnStdout: true).trim()
                     def sg_id     = sh(script: "cd infra && terraform output -raw security_group_id", returnStdout: true).trim()
                     def ami_id    = sh(script: "cd infra && terraform output -raw ami_id", returnStdout: true).trim()
 
+                    // Run AWS CLI commands
                     sh '''
                     INSTANCE_ID=$(aws ec2 run-instances \
                         --image-id ''' + ami_id + ''' \
@@ -59,10 +58,10 @@ pipeline {
 
     post {
         success {
-            echo "EC2 deployed successfully!"
+            echo "✅ EC2 deployed successfully!"
         }
         failure {
-            echo "EC2 deployment failed!"
+            echo "❌ EC2 deployment failed!"
         }
     }
 }
